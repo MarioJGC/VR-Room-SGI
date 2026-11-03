@@ -28,7 +28,7 @@ public class InstructionsPanel : MonoBehaviour
         "<b>Caminar:</b> muévete de verdad con las gafas puestas\n" +
         "<b>Teletransporte:</b> apunta al suelo y suelta el <b>GRIP</b>\n" +
         "<b>Girar:</b> gira el cuerpo o usa el <b>joystick derecho</b>\n" +
-        "<b>Maqueta:</b> botón <b>Menú</b> del mando izquierdo; apunta a la maqueta y pulsa <b>GRIP</b>\n" +
+        "<b>Maqueta:</b> botón <b>Menú</b> del mando izquierdo (otra vez: azotea); apunta y pulsa <b>GRIP</b>\n" +
         "<b>Escalera de mano (altillo):</b> acerca la mano, mantén el <b>GRIP</b> y tira hacia abajo";
 
     const string k_InteractText =

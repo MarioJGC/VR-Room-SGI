@@ -8,10 +8,11 @@ using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 
 /// <summary>
 /// Navegación propia: maqueta en miniatura del apartamento (World-in-Miniature) que se lleva
-/// en la mano izquierda. Se muestra/oculta con el botón de menú del mando izquierdo.
+/// en la mano izquierda. El botón de menú del mando izquierdo pasa por tres estados:
+/// interior (planta baja y altillo, sin techo) → azotea (con el techo) → oculta.
 /// Al apuntar a la maqueta con el rayo derecho aparece un marcador amarillo en el punto de destino;
 /// al pulsar el grip, el usuario se teletransporta a ese punto del apartamento real
-/// (planta baja, escalera o altillo). Un marcador azul indica dónde está el usuario.
+/// (planta baja, escalera, altillo o azotea). Un marcador azul indica dónde está el usuario.
 /// </summary>
 [RequireComponent(typeof(XRSimpleInteractable))]
 public class WorldInMiniature : MonoBehaviour
@@ -35,6 +36,7 @@ public class WorldInMiniature : MonoBehaviour
     XRRayInteractor m_HoveringRay;
     InputAction m_ToggleAction;
     bool m_Visible;
+    GameObject m_RoofLevel;
 
     /// <summary>Se lanza al mostrar u ocultar la maqueta (para sincronizar el panel de ajustes).</summary>
     public event System.Action<bool> VisibilityChanged;
@@ -46,9 +48,24 @@ public class WorldInMiniature : MonoBehaviour
         {
             m_Visible = value;
             m_ModelRoot.gameObject.SetActive(value);
-            if (!value && m_TargetMarker != null)
-                m_TargetMarker.gameObject.SetActive(false);
+            if (!value)
+            {
+                ShowRoof = false;
+                if (m_TargetMarker != null)
+                    m_TargetMarker.gameObject.SetActive(false);
+            }
             VisibilityChanged?.Invoke(value);
+        }
+    }
+
+    /// <summary>Muestra el nivel de la azotea (techo) en la maqueta; tapa el interior.</summary>
+    public bool ShowRoof
+    {
+        get => m_RoofLevel != null && m_RoofLevel.activeSelf;
+        set
+        {
+            if (m_RoofLevel != null)
+                m_RoofLevel.SetActive(value);
         }
     }
 
@@ -86,6 +103,8 @@ public class WorldInMiniature : MonoBehaviour
 
     void Start()
     {
+        BuildRoofLevel();
+
         // La maqueta va en la mano: que sus colliders no choquen con el cuerpo del jugador.
         if (m_Origin != null && m_Origin.TryGetComponent<CharacterController>(out var body))
         {
@@ -94,13 +113,84 @@ public class WorldInMiniature : MonoBehaviour
         }
 
         // Se oculta en Start (no en Awake) para que el interactuable registre antes los colliders de la maqueta.
+        // El nivel de la azotea empieza oculto (se activa con el botón de menú).
         Visible = m_StartVisible;
+        ShowRoof = false;
     }
 
+    /// <summary>Botón de menú: oculta → interior → azotea → oculta.</summary>
     void OnTogglePerformed(InputAction.CallbackContext context)
     {
-        Visible = !Visible;
+        if (!Visible)
+        {
+            Visible = true;
+            ShowRoof = false;
+        }
+        else if (!ShowRoof && m_RoofLevel != null)
+        {
+            ShowRoof = true;
+        }
+        else
+        {
+            Visible = false;
+        }
         PlayClip(m_ToggleClip);
+    }
+
+    /// <summary>
+    /// Crea en la maqueta el nivel de la azotea a partir del techo real (losas, tarima, muro y barandillas)
+    /// y una zona a la que apuntar para teletransportarse a la azotea.
+    /// Se rehace con cubos nuevos en vez de copiar los originales porque, en el build, el static batching
+    /// fusiona las mallas del techo y una copia directa no se vería bien.
+    /// </summary>
+    void BuildRoofLevel()
+    {
+        var structure = m_WorldRoot != null ? m_WorldRoot.Find("Structure") : null;
+        var roof = structure != null ? structure.Find("Roof") : null;
+        if (roof == null)
+            return;
+
+        m_RoofLevel = new GameObject("Roof Level");
+        m_RoofLevel.transform.SetParent(m_ModelRoot, false);
+
+        foreach (Transform piece in roof)
+        {
+            if (!piece.TryGetComponent<MeshRenderer>(out var source))
+                continue;
+            var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Destroy(cube.GetComponent<Collider>());
+            cube.name = piece.name;
+            cube.transform.SetParent(m_RoofLevel.transform, false);
+            cube.transform.localPosition = m_WorldRoot.InverseTransformPoint(piece.position);
+            cube.transform.localRotation = Quaternion.Inverse(m_WorldRoot.rotation) * piece.rotation;
+            cube.transform.localScale = piece.lossyScale;
+            var renderer = cube.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = source.sharedMaterial;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
+        // Zona a la que se apunta en la maqueta para ir a la azotea (copia de su zona de teletransporte).
+        var roofTeleport = structure.Find("Roof_Teleport");
+        if (roofTeleport != null)
+        {
+            var target = new GameObject("Roof Target");
+            target.transform.SetParent(m_RoofLevel.transform, false);
+            target.transform.localPosition = m_WorldRoot.InverseTransformPoint(roofTeleport.position);
+            foreach (var box in roofTeleport.GetComponents<BoxCollider>())
+            {
+                var copy = target.AddComponent<BoxCollider>();
+                copy.center = box.center;
+                copy.size = box.size;
+                m_Interactable.colliders.Add(copy);
+            }
+
+            // Se vuelve a registrar el interactuable para que tenga en cuenta los colliders nuevos.
+            if (m_Interactable.enabled)
+            {
+                m_Interactable.enabled = false;
+                m_Interactable.enabled = true;
+            }
+        }
     }
 
     void Update()

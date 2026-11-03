@@ -51,11 +51,11 @@ Empieza en el centro del salón, junto al borde del altillo, y sube hacia la par
 Las **barandillas** (escalera, altillo, rellano, trampilla y muro de la azotea) no se pueden atravesar: si caminas contra ellas, te quedas a su lado. Si sales por un borde sin barandilla, caes al piso de abajo.
 
 ### Maqueta del apartamento
-1. Pulsa el botón **☰** del mando izquierdo: aparece una maqueta del apartamento sobre tu mano.
-2. El **marcador azul** eres tú.
-3. Apunta a la maqueta con el **rayo derecho**: un **marcador amarillo** indica el destino.
-4. Pulsa el **grip** para teletransportarte a ese punto (planta baja, escalera o altillo).
-5. Vuelve a pulsar **☰** para ocultarla.
+1. Pulsa el botón **☰** del mando izquierdo: aparece una maqueta del apartamento sobre tu mano, sin techo, para ver la planta baja y el altillo.
+2. Pulsa **☰** otra vez para ver el nivel de la **azotea** (con el techo puesto). Una tercera pulsación la oculta.
+3. El **marcador azul** eres tú.
+4. Apunta a la maqueta con el **rayo derecho**: un **marcador amarillo** indica el destino.
+5. Pulsa el **grip** para teletransportarte a ese punto (planta baja, escalera, altillo o azotea).
 
 ### Escalera de mano a la azotea
 Está en el altillo, en la pared del fondo, junto a la estantería gris.

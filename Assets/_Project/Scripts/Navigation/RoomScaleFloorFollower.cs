@@ -109,7 +109,15 @@ public class RoomScaleFloorFollower : MonoBehaviour
             if (t.IsChildOf(transform) || !IsBarrierName(t.name))
                 continue;
             if (!t.TryGetComponent<Collider>(out var barrier))
-                barrier = t.gameObject.AddComponent<BoxCollider>();
+            {
+                // Las barandillas son cubos escalados: su collider es el cubo unidad en local.
+                // Se fija a mano porque en un build el static batching fusiona las mallas y,
+                // si Unity lo ajustara a la malla, el collider ocuparía toda la estructura.
+                var box = t.gameObject.AddComponent<BoxCollider>();
+                box.center = Vector3.zero;
+                box.size = Vector3.one;
+                barrier = box;
+            }
             m_Barriers.Add(barrier);
         }
 
